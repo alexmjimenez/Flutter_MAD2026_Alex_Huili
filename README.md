@@ -1,17 +1,42 @@
-# hello_world
+# Workspace
 
-A new Flutter project.
+Github:
+* Repository: [https://github.com/alexmjimenez/HelloWorldMAD26.git](https://github.com/alexmjimenez/Flutter_MAD2026_Alex_Huili)
+* Releases: [https://github.com/alexmjimenez/HelloWorldMAD26/releases](https://github.com/alexmjimenez/Flutter_MAD2026_Alex_Huili/releases)
 
-## Getting Started
+Workspace: ??
 
-This project is a starting point for a Flutter application.
+## Description
 
-A few resources to get you started if this is your first Flutter project:
+## Screenshots nad navigation
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## Demo video
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Features
+### Functional features
+
+### Technical features
+
+## How to Use
+
+## Additional section: Development History
+### Week 4
+
+### Week 5
+
+### Week 6
+
+## Participants
+List of MAD developers:
+* Huili Chen (huili.chen@alumnos.upm.es)
+* Lozano Martín Alex (alex.mjimenez@alumnos.upm.es)
+
+Workload distribution between members: (50% Huili / 50% Alex).
+* *Alex...*
+* *Huili...*
+
+## Demo
+The following video shows the app's functionality
+* **WEEK 4:** 
+* **WEEK 5:** 
+* **WEEK 6:** 
