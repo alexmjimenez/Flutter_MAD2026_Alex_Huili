@@ -127,7 +127,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
             ElevatedButton(
-              onPressed: () => _showSnackBar(context),
+              onPressed: () => _showSnackBar(context, text: "Welcome to Flutter_MAD, this is the SnackBar"),
               child: Text("Open SnackBar"),
             ),
           ],
