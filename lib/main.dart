@@ -5,6 +5,7 @@ import 'home_screen.dart';
 import 'map_screen.dart';
 import 'places_screen.dart';
 import 'records_screen.dart';
+import 'weather_screen.dart';
 
 const color = Colors.orange;
 
@@ -42,6 +43,7 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _screens = [
     HomeScreen(),
     MapScreen(),
+    WeatherScreen(),
     PlacesScreen(),
     RecordsScreen(),
   ];
@@ -59,6 +61,7 @@ class _MainScreenState extends State<MainScreen> {
         child: _screens.elementAt(_selectedIndex)
       ),
       bottomNavigationBar: BottomNavigationBar(
+          type: BottomNavigationBarType.fixed,
           items: const <BottomNavigationBarItem>[
             BottomNavigationBarItem(
               icon: Icon(Icons.home),
@@ -67,6 +70,10 @@ class _MainScreenState extends State<MainScreen> {
             BottomNavigationBarItem(
               icon: Icon(Icons.map),
               label: 'Map',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.cloud),
+              label: 'Weather',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.place),
