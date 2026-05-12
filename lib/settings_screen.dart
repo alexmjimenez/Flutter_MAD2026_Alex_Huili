@@ -23,9 +23,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _updatePreference(String key, String value) async {
     final prefs = await SharedPreferences.getInstance();
-    if (value is String) {
-      prefs.setString(key, value);
-    }
+    await prefs.setString(key, value);
   }
 
   @override
@@ -33,6 +31,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text("Settings"),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.info_outline),
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text("Welcome to the APP, this is the SnackBar"),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: FutureBuilder<Map<String, dynamic>>(
         future: _fetchAllPreferences(),
@@ -40,6 +51,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           if (snapshot.connectionState == ConnectionState.done) {
             if (snapshot.hasError) {
               return Center(child: Text("Error: ${snapshot.error}"));
+            }
+            if (snapshot.data == null) {
+              return Center(child: Text("No settings found"));
             }
             return ListView(
               children: snapshot.data!.entries.map((entry) {
