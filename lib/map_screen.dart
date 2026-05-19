@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -13,7 +14,7 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   List<LatLng> _routePoints = [];
-  bool _isLoading = true;
+  bool _isLoadingCSV = true;
 
   @override
   void initState() {
@@ -41,95 +42,139 @@ class _MapScreenState extends State<MapScreen> {
 
         setState(() {
           _routePoints = points;
-          _isLoading = false;
+          _isLoadingCSV = false;
         });
       } else {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isLoadingCSV = false);
       }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      debugPrint("Error loading CSV: $e");
+      setState(() => _isLoadingCSV = false);
+      debugPrint("Error loading local CSV routes: $e");
+    }
+  }
+
+  Widget _getIconForStatus(String status) {
+    switch (status) {
+      case "Broken Bin":
+        return const Icon(Icons.build, color: Colors.red, size: 28);
+      case "Full Bin":
+        return const Icon(Icons.delete, color: Colors.brown, size: 28);
+      case "Dirty Bin":
+        return const Icon(Icons.cleaning_services, color: Colors.orange, size: 28);
+      default:
+        return const Icon(Icons.warning, color: Colors.amber, size: 28);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
+    if (_isLoadingCSV) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    LatLng center = const LatLng(40.4168, -3.7038);
-
-    LatLngBounds? mapBounds;
-    if (_routePoints.isNotEmpty) {
-      mapBounds = LatLngBounds.fromPoints(_routePoints);
-    }
+    LatLng defaultCenter = const LatLng(40.4168, -3.7038);
+    LatLng center = _routePoints.isNotEmpty ? _routePoints.last : defaultCenter;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("OpenStreetMaps Tracking"),
+        title: const Text("Incidents & Route Map"),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
-      body: FlutterMap(
-        options: MapOptions(
-          initialCameraFit: mapBounds != null
-              ? CameraFit.bounds(
-            bounds: mapBounds,
-            padding: const EdgeInsets.all(50.0),
-          )
-              : null,
-          initialCenter: center,
-          initialZoom: 13.0,
-        ),
-        children: [
-          TileLayer(
-            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-            userAgentPackageName: 'com.upm.mad2026.huili_alex',
-          ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance.collection('reports').snapshots(),
+        builder: (context, snapshot) {
+          List<Marker> allMarkers = [];
 
-          if (_routePoints.isNotEmpty)
-            PolylineLayer(
-              polylines: [
-                Polyline(
-                  points: _routePoints,
-                  color: Colors.blue.withOpacity(0.5),
-                  strokeWidth: 4.0,
+          if (_routePoints.isNotEmpty) {
+            for (int i = 0; i < _routePoints.length; i++) {
+              bool isFirst = i == 0;
+              bool isLast = i == _routePoints.length - 1;
+
+              allMarkers.add(
+                Marker(
+                  point: _routePoints[i],
+                  width: 50,
+                  height: 50,
+                  child: Column(
+                    children: [
+                      if (isFirst)
+                        Container(color: Colors.white, child: const Text("Start", style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.bold))),
+                      if (isLast)
+                        Container(color: Colors.white, child: const Text("Here", style: TextStyle(color: Colors.blue, fontSize: 10, fontWeight: FontWeight.bold))),
+                      Icon(
+                        Icons.location_on,
+                        color: isLast ? Colors.blue : (isFirst ? Colors.green : Colors.red.withOpacity(0.5)),
+                        size: isLast ? 32.0 : 24.0,
+                      ),
+                    ],
+                  ),
                 ),
-              ],
-            ),
+              );
+            }
+          }
 
-          MarkerLayer(
-            markers: _buildMarkers(),
-          ),
-        ],
+          if (snapshot.hasData) {
+            for (var doc in snapshot.data!.docs) {
+              var data = doc.data() as Map<String, dynamic>;
+              if (data['lat'] != null && data['lon'] != null) {
+                allMarkers.add(
+                  Marker(
+                    point: LatLng(data['lat'], data['lon']),
+                    width: 90,
+                    height: 65,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _getIconForStatus(data['status'] ?? ''),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                          decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.9),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: Colors.grey, width: 0.5)
+                          ),
+                          child: Text(
+                            data['status'] ?? 'Unknown',
+                            style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.black87),
+                            textAlign: TextAlign.center,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+            }
+          }
+
+          return FlutterMap(
+            options: MapOptions(
+              initialCenter: center,
+              initialZoom: 14.0,
+            ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'es.upm.etsisi.mad.huili_alex',
+              ),
+
+              if (_routePoints.isNotEmpty)
+                PolylineLayer(
+                  polylines: [
+                    Polyline(
+                      points: _routePoints,
+                      color: Colors.blue.withOpacity(0.6),
+                      strokeWidth: 4.0,
+                    ),
+                  ],
+                ),
+
+              MarkerLayer(markers: allMarkers),
+            ],
+          );
+        },
       ),
     );
-  }
-
-  List<Marker> _buildMarkers() {
-    List<Marker> markers = [];
-
-    for (int i = 0; i < _routePoints.length; i++) {
-      bool isLastMarker = i == _routePoints.length - 1;
-
-      markers.add(
-        Marker(
-          point: _routePoints[i],
-          width: 40,
-          height: 40,
-          child: Icon(
-            Icons.location_on,
-            color: isLastMarker ? Colors.blue : Colors.red,
-            size: isLastMarker ? 40.0 : 30.0,
-          ),
-        ),
-      );
-    }
-
-    return markers;
   }
 }
