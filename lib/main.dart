@@ -7,7 +7,7 @@ import 'firebase_options.dart';
 import 'home_screen.dart';
 import 'map_screen.dart';
 import 'weather_screen.dart';
-import 'report_screen.dart'; // <--- El nuevo archivo
+import 'report_screen.dart';
 import 'places_screen.dart';
 import 'records_screen.dart';
 import 'login_screen.dart';
@@ -74,7 +74,6 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
-  // AQUÍ ESTÁN TUS 6 PESTAÑAS EN ORDEN
   final List<Widget> _screens = [
     HomeScreen(),
     const MapScreen(),
