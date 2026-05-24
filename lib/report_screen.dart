@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 class ReportScreen extends StatefulWidget {
   const ReportScreen({super.key});
@@ -11,10 +12,11 @@ class ReportScreen extends StatefulWidget {
 }
 
 class _ReportScreenState extends State<ReportScreen> {
+  final DatabaseReference _dbRef = FirebaseDatabase.instance.ref();
   String? _userEmail;
   double? _currentLat;
   double? _currentLon;
-  String _selectedStatus = "Full Bin"; // Estado por defecto en inglés
+  String _selectedStatus = "Full Bin";
   bool _isLoadingData = true;
   bool _isSending = false;
 
@@ -28,7 +30,7 @@ class _ReportScreenState extends State<ReportScreen> {
     try {
       _userEmail = FirebaseAuth.instance.currentUser?.email;
       Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
-
+      
       setState(() {
         _currentLat = position.latitude;
         _currentLon = position.longitude;
@@ -53,20 +55,22 @@ class _ReportScreenState extends State<ReportScreen> {
     setState(() => _isSending = true);
 
     try {
-      await FirebaseFirestore.instance.collection('reports').add({
+      String? newReportKey = _dbRef.child('reports').push().key;
+
+      await _dbRef.child('reports/$newReportKey').set({
         'email': _userEmail ?? 'Anonymous',
         'status': _selectedStatus,
         'lat': _currentLat,
         'lon': _currentLon,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+      }).timeout(const Duration(seconds: 10));
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Report '$_selectedStatus' submitted to Firebase")),
+        SnackBar(content: Text("Report '$_selectedStatus' sent to Realtime Firebase!")),
       );
-
+      
       setState(() {
-        _selectedStatus = "Full Bin"; // Reset selection
+        _selectedStatus = "Full bin";
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -79,7 +83,7 @@ class _ReportScreenState extends State<ReportScreen> {
 
   void _cancelReport() {
     setState(() {
-      _selectedStatus = "Full Bin";
+      _selectedStatus = "Full bin";
     });
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("Report cancelled")),
@@ -102,79 +106,76 @@ class _ReportScreenState extends State<ReportScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Report Issue")),
+      appBar: AppBar(title: const Text("Report issue")),
       body: _isSending
           ? const Center(child: CircularProgressIndicator())
           : Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text("Report", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 15),
-
-            // Cuadro de información automática (API)
-            Card(
-              color: Colors.grey[100],
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text("API Data (Auto-filled):", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
-                    const Divider(),
-                    Text("Email: ${_userEmail ?? 'Not detected'}"),
-                    const SizedBox(height: 5),
-                    Text("Latitude: ${_currentLat ?? 'Searching...'}"),
-                    const SizedBox(height: 5),
-                    Text("Longitude: ${_currentLon ?? 'Searching...'}"),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 25),
-
-            const Text("Select the issue status:", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 15),
-
-            // Botones selectores de estado en inglés
-            Expanded(
-              child: ListView(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildStatusRadio("Full Bin", Icons.delete, Colors.brown),
-                  _buildStatusRadio("Dirty Bin", Icons.cleaning_services, Colors.orange),
-                  _buildStatusRadio("Broken Bin", Icons.build, Colors.red),
+                  const Text("Report", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 15),
+                  
+                  Card(
+                    color: Colors.grey[100],
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text("API Data (Auto-filled):", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+                          const Divider(),
+                          Text("Email: ${_userEmail ?? 'Not detected'}"),
+                          const SizedBox(height: 5),
+                          Text("Latitude: ${_currentLat ?? 'Searching...'}"),
+                          const SizedBox(height: 5),
+                          Text("Longitude: ${_currentLon ?? 'Searching...'}"),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 25),
+                  
+                  const Text("Select the issue status:", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 15),
+
+                  Expanded(
+                    child: ListView(
+                      children: [
+                        _buildStatusRadio("Full bin", Icons.delete, Colors.brown),
+                        _buildStatusRadio("Dirty bin", Icons.cleaning_services, Colors.orange),
+                        _buildStatusRadio("Broken bin", Icons.build, Colors.red),
+                      ],
+                    ),
+                  ),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(padding: const EdgeInsets.all(16)),
+                          onPressed: _cancelReport,
+                          child: const Text("CANCEL", style: TextStyle(color: Colors.red)),
+                        ),
+                      ),
+                      const SizedBox(width: 15),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.all(16),
+                            backgroundColor: Colors.orange,
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed: _submitReport,
+                          child: const Text("SUBMIT"),
+                        ),
+                      ),
+                    ],
+                  )
                 ],
               ),
             ),
-
-            // Botones Submit / Cancel
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(padding: const EdgeInsets.all(16)),
-                    onPressed: _cancelReport,
-                    child: const Text("CANCEL", style: TextStyle(color: Colors.red)),
-                  ),
-                ),
-                const SizedBox(width: 15),
-                Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.all(16),
-                      backgroundColor: Colors.orange,
-                      foregroundColor: Colors.white,
-                    ),
-                    onPressed: _submitReport,
-                    child: const Text("SUBMIT"),
-                  ),
-                ),
-              ],
-            )
-          ],
-        ),
-      ),
     );
   }
 
