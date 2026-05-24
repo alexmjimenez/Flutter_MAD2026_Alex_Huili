@@ -74,6 +74,26 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _showWelcomeDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Welcome"),
+          content: const Text("This application allows you to track your routes, check the local weather, view public bins, and report maintenance issues in real time."),
+          actions: <Widget>[
+            TextButton(
+              child: const Text("OK"),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _showSnackBar(BuildContext context, {String? text}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -127,8 +147,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
             ElevatedButton(
-              onPressed: () => _showSnackBar(context, text: "Welcome to Flutter_MAD, this is the SnackBar"),
-              child: Text("Open SnackBar"),
+              onPressed: _showWelcomeDialog,
+              child: Text("APP info"),
             ),
           ],
         ),
@@ -140,8 +160,8 @@ class _HomeScreenState extends State<HomeScreen> {
     logger.d("Location is on");
     _showSnackBar(context, text: "The location is on");
     final locationSettings = LocationSettings(
-      accuracy: LocationAccuracy.high, // Adjust the accuracy as needed
-      distanceFilter: 10, // Distance in meters before an update is triggered
+      accuracy: LocationAccuracy.high,
+      distanceFilter: 10,
     );
 
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
