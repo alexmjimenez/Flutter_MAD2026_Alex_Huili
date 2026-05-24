@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_database/firebase_database.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -15,6 +15,7 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   List<LatLng> _routePoints = [];
   bool _isLoadingCSV = true;
+  final DatabaseReference _dbRef = FirebaseDatabase.instance.ref();
 
   @override
   void initState() {
@@ -49,20 +50,22 @@ class _MapScreenState extends State<MapScreen> {
       }
     } catch (e) {
       setState(() => _isLoadingCSV = false);
-      debugPrint("Error loading local CSV routes: $e");
     }
   }
 
   Widget _getIconForStatus(String status) {
     switch (status) {
-      case "Broken Bin":
-        return const Icon(Icons.build, color: Colors.red, size: 28);
-      case "Full Bin":
-        return const Icon(Icons.delete, color: Colors.brown, size: 28);
-      case "Dirty Bin":
-        return const Icon(Icons.cleaning_services, color: Colors.orange, size: 28);
+      case "Empty / Clean":
+        return const Icon(Icons.delete_outline, color: Colors.green, size: 30);
+      case "Full bin":
+        return const Icon(Icons.delete, color: Colors.brown, size: 30);
+      case "Dirty bin":
+      case "Dirty bin":
+        return const Icon(Icons.cleaning_services, color: Colors.orange, size: 30);
+      case "Broken bin":
+        return const Icon(Icons.build, color: Colors.red, size: 30);
       default:
-        return const Icon(Icons.warning, color: Colors.amber, size: 28);
+        return const Icon(Icons.location_on, color: Colors.blue, size: 30);
     }
   }
 
@@ -77,12 +80,11 @@ class _MapScreenState extends State<MapScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Incidents & Route Map"),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: const Text("Map"),
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('reports').snapshots(),
-        builder: (context, snapshot) {
+      body: StreamBuilder(
+        stream: _dbRef.onValue,
+        builder: (context, AsyncSnapshot<DatabaseEvent> snapshot) {
           List<Marker> allMarkers = [];
 
           if (_routePoints.isNotEmpty) {
@@ -113,38 +115,77 @@ class _MapScreenState extends State<MapScreen> {
             }
           }
 
-          if (snapshot.hasData) {
-            for (var doc in snapshot.data!.docs) {
-              var data = doc.data() as Map<String, dynamic>;
-              if (data['lat'] != null && data['lon'] != null) {
-                allMarkers.add(
-                  Marker(
-                    point: LatLng(data['lat'], data['lon']),
-                    width: 90,
-                    height: 65,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _getIconForStatus(data['status'] ?? ''),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                          decoration: BoxDecoration(
+          if (snapshot.hasData && snapshot.data?.snapshot.value != null) {
+            Map<dynamic, dynamic> rootMap = snapshot.data!.snapshot.value as Map<dynamic, dynamic>;
+
+            if (rootMap['bins'] != null) {
+              Map<dynamic, dynamic> bins = rootMap['bins'] as Map<dynamic, dynamic>;
+              bins.forEach((key, value) {
+                if (value['lat'] != null && value['lon'] != null) {
+                  allMarkers.add(
+                    Marker(
+                      point: LatLng(value['lat'], value['lon']),
+                      width: 90,
+                      height: 65,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _getIconForStatus(value['status'] ?? 'Empty / Clean'),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                            decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.9),
                               borderRadius: BorderRadius.circular(4),
-                              border: Border.all(color: Colors.grey, width: 0.5)
+                              border: Border.all(color: Colors.grey, width: 0.5),
+                            ),
+                            child: Text(
+                              value['status'] ?? 'Clean',
+                              style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.black87),
+                              textAlign: TextAlign.center,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                          child: Text(
-                            data['status'] ?? 'Unknown',
-                            style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.black87),
-                            textAlign: TextAlign.center,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                );
-              }
+                  );
+                }
+              });
+            }
+
+            if (rootMap['reports'] != null) {
+              Map<dynamic, dynamic> reports = rootMap['reports'] as Map<dynamic, dynamic>;
+              reports.forEach((key, value) {
+                if (value['lat'] != null && value['lon'] != null) {
+                  allMarkers.add(
+                    Marker(
+                      point: LatLng(value['lat'], value['lon']),
+                      width: 90,
+                      height: 65,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _getIconForStatus(value['status'] ?? ''),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.9),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: Colors.grey, width: 0.5),
+                            ),
+                            child: Text(
+                              value['status'] ?? 'Report',
+                              style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.black87),
+                              textAlign: TextAlign.center,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+              });
             }
           }
 
@@ -158,7 +199,6 @@ class _MapScreenState extends State<MapScreen> {
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'es.upm.etsisi.mad.huili_alex',
               ),
-
               if (_routePoints.isNotEmpty)
                 PolylineLayer(
                   polylines: [
@@ -169,7 +209,6 @@ class _MapScreenState extends State<MapScreen> {
                     ),
                   ],
                 ),
-
               MarkerLayer(markers: allMarkers),
             ],
           );

@@ -27,12 +27,12 @@ class _WeatherScreenState extends State<WeatherScreen> {
   Future<void> _fetchWeather() async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) throw Exception("GPS desactivado.");
+      if (!serviceEnabled) throw Exception("GPS disabled");
 
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) throw Exception("Permiso denegado.");
+        if (permission == LocationPermission.denied) throw Exception("Permission denied");
       }
 
       Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
@@ -51,7 +51,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
       });
 
     } catch (e) {
-      logger.e("Error al obtener el tiempo: $e");
+      logger.e("Error getting weather: $e");
       setState(() {
         _isLoading = false;
       });
@@ -62,14 +62,14 @@ class _WeatherScreenState extends State<WeatherScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Local Weather"),
+        title: const Text("Weather"),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: Center(
         child: _isLoading
             ? const CircularProgressIndicator()
             : _weatherData == null
-            ? const Text("Error al cargar el tiempo.")
+            ? const Text("Error loading weather")
             : Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
