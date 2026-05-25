@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ReportScreen extends StatefulWidget {
   const ReportScreen({super.key});
@@ -14,6 +14,9 @@ class ReportScreen extends StatefulWidget {
 class _ReportScreenState extends State<ReportScreen> {
   final DatabaseReference _dbRef = FirebaseDatabase.instance.ref();
   String? _userEmail;
+  String _userName = "User";
+  String _userUid = "";
+  String _userRole = "citizen";
   double? _currentLat;
   double? _currentLon;
   String _selectedStatus = "Full Bin";
@@ -28,9 +31,15 @@ class _ReportScreenState extends State<ReportScreen> {
 
   Future<void> _loadAutomaticData() async {
     try {
+      final prefs = await SharedPreferences.getInstance();
+      _userName = prefs.getString('name') ?? "User";
+      _userUid = prefs.getString('uid') ?? "";
+      String token = prefs.getString('token') ?? "";
+      _userRole = (token == "AYUNTAMIENTO2026") ? "ayuntamiento" : "citizen";
+
       _userEmail = FirebaseAuth.instance.currentUser?.email;
       Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
-      
+
       setState(() {
         _currentLat = position.latitude;
         _currentLon = position.longitude;
@@ -39,7 +48,7 @@ class _ReportScreenState extends State<ReportScreen> {
     } catch (e) {
       setState(() => _isLoadingData = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error fetching location: $e"), backgroundColor: Colors.red),
+        SnackBar(content: Text("Error fetching data: $e"), backgroundColor: Colors.red),
       );
     }
   }
@@ -58,12 +67,32 @@ class _ReportScreenState extends State<ReportScreen> {
       String? newReportKey = _dbRef.child('reports').push().key;
 
       await _dbRef.child('reports/$newReportKey').set({
+        'name': _userName,
         'email': _userEmail ?? 'Anonymous',
+        'role': _userRole,
         'status': _selectedStatus,
         'lat': _currentLat,
         'lon': _currentLon,
         'timestamp': DateTime.now().millisecondsSinceEpoch,
       }).timeout(const Duration(seconds: 10));
+
+      if (_userUid.isNotEmpty) {
+        final userRef = _dbRef.child('users/$_userUid');
+        final snapshot = await userRef.get();
+        int reportPoints = 0;
+        int totalPoints = 0;
+        if (snapshot.exists) {
+          Map data = snapshot.value as Map;
+          reportPoints = data['reportPoints'] ?? 0;
+          totalPoints = data['totalPoints'] ?? 0;
+        }
+        await userRef.update({
+          'name': _userName,
+          'role': _userRole,
+          'reportPoints': reportPoints + 5,
+          'totalPoints': totalPoints + 5,
+        });
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Report '$_selectedStatus' sent to Realtime Firebase!")),
@@ -99,7 +128,7 @@ class _ReportScreenState extends State<ReportScreen> {
           children: [
             CircularProgressIndicator(),
             SizedBox(height: 10),
-            Text("Loading API data (Auto-filling)...")
+            Text("Loading data...")
           ],
         )),
       );
@@ -124,13 +153,13 @@ class _ReportScreenState extends State<ReportScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text("API Data (Auto-filled):", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+                          const Text("User info data:", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
                           const Divider(),
+                          Text("Name: $_userName"),
+                          const SizedBox(height: 5),
+                          Text("Role: $_userRole"),
+                          const SizedBox(height: 5),
                           Text("Email: ${_userEmail ?? 'Not detected'}"),
-                          const SizedBox(height: 5),
-                          Text("Latitude: ${_currentLat ?? 'Searching...'}"),
-                          const SizedBox(height: 5),
-                          Text("Longitude: ${_currentLon ?? 'Searching...'}"),
                         ],
                       ),
                     ),
