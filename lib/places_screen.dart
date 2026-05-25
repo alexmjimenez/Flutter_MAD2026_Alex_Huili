@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PlacesScreen extends StatefulWidget {
   const PlacesScreen({super.key});
@@ -16,6 +16,47 @@ class _PlacesScreenState extends State<PlacesScreen> {
   final _lonController = TextEditingController();
   bool _isAdding = false;
   String _binStatus = "Empty / Clean";
+  bool _isTownHall = false;
+  String _userUid = "";
+  String _userName = "User";
+  String _userRole = "citizen";
+
+  @override
+  void initState() {
+    super.initState();
+    _checkPermissions();
+  }
+
+  Future<void> _checkPermissions() async {
+    final prefs = await SharedPreferences.getInstance();
+    String token = prefs.getString('token') ?? "";
+    _userUid = prefs.getString('uid') ?? "";
+    _userName = prefs.getString('name') ?? "User";
+
+    setState(() {
+      _isTownHall = (token == "AYUNTAMIENTO2026");
+      _userRole = _isTownHall ? "ayuntamiento" : "citizen";
+    });
+  }
+
+  Future<void> _updateUserPoints() async {
+    if (_userUid.isEmpty) return;
+    final userRef = _dbRef.child('users/$_userUid');
+    final snapshot = await userRef.get();
+    int binPoints = 0;
+    int totalPoints = 0;
+    if (snapshot.exists) {
+      Map data = snapshot.value as Map;
+      binPoints = data['binPoints'] ?? 0;
+      totalPoints = data['totalPoints'] ?? 0;
+    }
+    await userRef.update({
+      'name': _userName,
+      'role': _userRole,
+      'binPoints': binPoints + 10,
+      'totalPoints': totalPoints + 10,
+    });
+  }
 
   Future<void> _addBinCurrentLocation() async {
     setState(() => _isAdding = true);
@@ -33,6 +74,8 @@ class _PlacesScreenState extends State<PlacesScreen> {
         'completedCount': 0,
         'scorePoints': 10,
       }).timeout(const Duration(seconds: 10));
+
+      await _updateUserPoints();
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Bin added successfully")),
@@ -67,8 +110,8 @@ class _PlacesScreenState extends State<PlacesScreen> {
         'status': _binStatus,
         'completedCount': 0,
         'scorePoints': 10,
-      });
-
+      }).timeout(const Duration(seconds: 10));
+      await _updateUserPoints();
       _latController.clear();
       _lonController.clear();
 
@@ -77,7 +120,7 @@ class _PlacesScreenState extends State<PlacesScreen> {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Format error or Firebase issue: $e"), backgroundColor: Colors.red),
+        SnackBar(content: Text("Error adding bin: $e"), backgroundColor: Colors.red),
       );
     } finally {
       setState(() => _isAdding = false);
@@ -169,12 +212,14 @@ class _PlacesScreenState extends State<PlacesScreen> {
 
                       return Card(
                         child: ListTile(
-                          title: Text("${value['status']} - ${value['email']}"),
+                          title: Text("${value['status']} - ${value['name'] ?? 'User'}"),
                           subtitle: Text("Lat: ${value['lat']}, Lon: ${value['lon']}"),
-                          trailing: IconButton(
+                          trailing: _isTownHall
+                              ? IconButton(
                             icon: const Icon(Icons.check_circle, color: Colors.green),
                             onPressed: () => _resolveReport(key),
-                          ),
+                          )
+                              : null,
                         ),
                       );
                     },
