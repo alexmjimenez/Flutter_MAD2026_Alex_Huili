@@ -4,7 +4,7 @@ Github:
 * Repository: [https://github.com/alexmjimenez/HelloWorldMAD26.git](https://github.com/alexmjimenez/Flutter_MAD2026_Alex_Huili)
 * Releases: [https://github.com/alexmjimenez/HelloWorldMAD26/releases](https://github.com/alexmjimenez/Flutter_MAD2026_Alex_Huili/releases)
 
-Workspace: https://upm365.sharepoint.com/:u:/s/MobileAPPDevelopmentGroup/IQCpZIwIHHZUQYlnT6Hqz18QAfoaPzNKJiFzHrLOmGAjLPk?e=FPQX9R
+Workspace: https://upm365.sharepoint.com/:u:/s/MobileAPPDevelopmentGroup/IQCpZIwIHHZUQYlnT6Hqz18QAfoaPzNKJiFzHrLOmGAjLPk?e=FPQX9R (Address to flutter folder)
 
 ## Description
 "Bin Collector" is an app that allows citizens to track their routes, checks the local weather, view public bins, and report maintenance issues in real time. The cizitens and city ​​hall administrator can add news bins with marked coordinates and catalog reports issue status to promote a cleaner environment, providing real-time database. The​​ hall administrator, exclusively, allows to erase reports when it's done; and bins. Additionally, it enhances the experience within its scope by rewarding users with score for reports issue and new bins added; and the leaderboard to compete with users for highest score possible. Ideally, this app creates an environmental community and unifies a swift response through map-marked reports to address landfill issues.
@@ -28,29 +28,59 @@ Workspace: https://upm365.sharepoint.com/:u:/s/MobileAPPDevelopmentGroup/IQCpZIw
 
 ## Features
 ### Functional features
+* Track reports and bin on a interactive map.
+* For all users, add new bins and report issues (Full, Dirty, Broken for status) to keep the city clean.
+* For hall city administrator, exclusively, remove bins and report issues.
+* **Scoring system:** Earn 5 points for every new reports and 10 points for bins.
+* Leaderboard score system to compete with the highest score possible.
+* View real-time database for bins and reports and real-time location for local weather.
+* Records all locations history.
 
 ### Technical features
+* **Maps:** flutter_map for interactive map.
+* **Weather:** Local Weather API integrated using Retrofit and dio.
+* **Location updates:** GPS coordinates (Latitude, Longitude, Altitude) utilizing geolocator.
+* **Persistence in csv/text file:** Stores data location saved in csv files (csv).
+* **Persistence in shared preferences:** User ID and API Key management (shared_preferences).
+* **Firebase Realtime database:** Real-time data storage and community sync for reports and bins.
+* **Firebase authentication:** Secure user login via Email and Google Auth UI.
 
-## How to Use
+## How to use to add or remove reports and bins
+1. Open the app and log in using your Email Account.
+2. Optionally in settings menu, to change the role to hall city administrator, type in the token input: "AYUNTAMIENTO2026".
+3. Check your Score on the main screen.
+4. Add the report issues and bins with current or custom coordinates.
+5. If the user has a role as hall city administrator, it grants to remove reports and bins.
+6. Navigate to the Map to check all reports and bins.
 
 ## Additional section: Development History
-### Week 4
-
-### Week 5
+### Week 3-5 (v1)
+* **Advanced Navigation**: Implementation of a 3-level navigation flow (MainActivity ↔ SecondActivity ↔ ThirdActivity)
+* **GPS Location and location updates**: The app requests runtime permissions and displays the device's latitude and longitude and GPS coordinates (Latitude, Longitude, Altitude) utilizing geolocator
+* **System Logging**: Integrated logger library messaging with different levels of verbosity (Debug and Info) to monitor the activity lifecycle.
+* **Custom Styling**: UI components have been customized
+* **Persistence in csv/text file:** Stores data location saved in csv files (csv).
+* **Records location history**: Records all locations history.
+* **Persistence in shared preferences:** User ID and API Key management (shared_preferences).
 
 ### Week 6
+* **Weather:** Local Weather API integrated using Retrofit and dio.
+* **Map:** For an interactive map, using the library flutter_map.
+* **Snackbar notification**
+
+### Week 7-8 (v2)
+* **Firebase Realtime database:** Real-time data storage and community sync for reports and bins.
+* **Firebase authentication:** Secure user login via Email and Google Auth UI.
+* **Scoring system:** Earn 5 points for every new reports and 10 points for bins.
+* **Leaderboard scoring system:** Users compete with the highest score possible, displaying list of users from highest score.
+* **Add/remove reports and bins system**: Users can now add or remove reports and bin and updates icons to the map in real-time database.
+* **Token added for role as hall city administrator**: This role allows to remove reports and bins.
 
 ## Participants
 List of MAD developers:
 * Huili Chen (huili.chen@alumnos.upm.es)
 * Lozano Martín Alex (alex.mjimenez@alumnos.upm.es)
 
-Workload distribution between members: (50% Huili / 50% Alex).
-* *Alex...*
-* *Huili...*
-
-## Demo
-The following video shows the app's functionality
-* **WEEK 4:** 
-* **WEEK 5:** 
-* **WEEK 6:** 
+Workload distribution between members: (60% Huili / 40% Alex).
+* *Alex focused on base app structure, navigation, GPS sensors integration, persistence in csv/text file and in shared preferences, and Firebase Setup.*
+* *Huili was in charge of the external API connections (Retrofit for weather and flutter_map for map), Gamification Score System and Leaderboard System, sharedPreferences focused to change roles by tokens, functions for reports and bins, and Firebase Realtime Database cloud sync.*
