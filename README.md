@@ -1,8 +1,8 @@
 # Workspace
 
 Github:
-* Repository: [https://github.com/alexmjimenez/HelloWorldMAD26.git](https://github.com/alexmjimenez/Flutter_MAD2026_Alex_Huili)
-* Releases: [https://github.com/alexmjimenez/HelloWorldMAD26/releases](https://github.com/alexmjimenez/Flutter_MAD2026_Alex_Huili/releases)
+* Repository: https://github.com/alexmjimenez/Flutter_MAD2026_Alex_Huili
+* Releases: https://github.com/alexmjimenez/Flutter_MAD2026_Alex_Huili/releases
 
 Workspace: https://upm365.sharepoint.com/:u:/s/MobileAPPDevelopmentGroup/IQCpZIwIHHZUQYlnT6Hqz18QAfoaPzNKJiFzHrLOmGAjLPk?e=FPQX9R (Address to flutter folder)
 
